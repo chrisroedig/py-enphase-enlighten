@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="enlighten-croedig", # Replace with your own username
+    name="py-enphase-enlighten-croedig", # Replace with your own username
     version="0.0.1",
     author="Christoph A. Roedig",
     author_email="chris@roedig.us",
