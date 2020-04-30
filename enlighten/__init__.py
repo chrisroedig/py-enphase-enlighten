@@ -1,5 +1,6 @@
 import numpy as np
-import datetime
+from datetime import datetime
+from datetime import timedelta
 import requests
 import re
 import os
@@ -110,7 +111,7 @@ class Client():
     def time_axis(self, start):
         mins = self.time_index
         return np.array(
-            [ start + datetime.timedelta(minutes=int(m)) for m in mins ]) 
+            [ start + timedelta(minutes=int(m)) for m in mins ]) 
 
     def fetch_day(self, date):
         date_str = date.strftime('%Y-%m-%d')
@@ -122,7 +123,7 @@ class Client():
     def process_day(self, raw_data):
         raw_data.pop('haiku')
         date = raw_data.pop('date')
-        start_ts = datetime.datetime.strptime(date, '%Y-%m-%d').timestamp()
+        start_ts = datetime.strptime(date, '%Y-%m-%d').timestamp()
         # data -> { '<dev_id>': { 'POWR' [<time>, <power>, <max_pwr>] }, ... }
         self.device_index = list(raw_data.keys())
 
@@ -137,22 +138,29 @@ class Client():
 
     def device_data(self, date, device_id):
         date_key = date.strftime('%Y-%m-%d')
+        ds = datetime(date.year,date.month,date.day)
         if self.data.get(date_key, None) is None:
-            self.fetch_day(date)
+            self.fetch_day(ds)
         if device_id not in self.device_index:
             return None
         i = self.device_index.index(device_id)
-        return self.time_axis(date), self.data[date_key][i]
+        return self.time_axis(ds), self.data[date_key][i]
     
-    def system_data(self, date, time_slice=False):
+    def system_data(self, date, transpose=False):
         date_key = date.strftime('%Y-%m-%d')
+        ds = datetime(date.year,date.month,date.day)
         if self.data.get(date_key, None) is None:
-            self.fetch_day(date)
-        if time_slice:
-            return np.transpose(self.data[date_key])[self.time_index_at(date)]
+            self.fetch_day(ds)
+        if transpose:
+            return self.time_axis(ds), np.transpose(self.data[date_key])
         else:
-            return self.time_axis(date), self.data[date_key]
-    
+            return self.time_axis(ds), self.data[date_key]
+
+    def array_power(self, time):
+        times, powers = self.system_data(time, transpose=True)
+        time_id = self.time_index_at(time)
+        return times[time_id], powers[time_id]
+
     def system_totals_data(self, date):
         date_key = date.strftime('%Y-%m-%d')
         if self.data.get(date_key, None) is None:
@@ -160,5 +168,5 @@ class Client():
         return self.time_axis(date), sum(self.data[date_key],0)
     
     def time_index_at(self, time):
-        ds = datetime.datetime(time.year,time.month,time.day)
-        return round((time-ds).total_seconds() / 600)
+        ds = datetime(time.year,time.month,time.day)
+        return round((time-ds).total_seconds() / 300)
