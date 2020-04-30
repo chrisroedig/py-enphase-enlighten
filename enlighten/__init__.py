@@ -12,7 +12,8 @@ class Client():
         self.system_id = None
         self.csrf_token = ''
         self.cookies = None
-        self.data = {}
+        self.power_data = {}
+        self.raw_data = {}
         self.persist_session = kwargs.get('persist_session', False)
         self.cookie_file = kwargs.get('session_file','enphase_cookie.p')
         self.persist_config = kwargs.get('persist_config', False)
@@ -118,46 +119,56 @@ class Client():
         params = {'date': date_str}
         resp = requests.get(self.URL + path, params=params, cookies=self.cookies)
         return self.process_day(resp.json())
-    
+    def inverter_details(self, date):
+        # { "date": "...", "ch_id": ..., 
+        #     "POWR":[[<time>, <power>, <???>],...],
+        #     "DCV": [[<time>,<voltage>],...],
+        #     "DCA": [[<time>,<current>,...]],
+        #     "ACV": [[<time>,<voltage>],...],
+        #     "ACHZ": [[<time>,<freq>],...],
+        #     "TMPI": [[<time>,<temp_c>],...],
+        #     "stat_info": {}
+        # }
+        pass
     def process_day(self, raw_data):
         raw_data.pop('haiku')
         date = raw_data.pop('date')
         start_ts = datetime.datetime.strptime(date, '%Y-%m-%d').timestamp()
         # data -> { '<dev_id>': { 'POWR' [<time>, <power>, <max_pwr>] }, ... }
         self.device_index = list(raw_data.keys())
-
-        data = np.zeros((len(self.device_index), len(self.time_index)))
+        self.raw_data[date] = raw_data
+        power_data = np.zeros((len(self.device_index), len(self.time_index)))
         for i, p_id in enumerate(raw_data.keys()):
             for sample in raw_data[p_id]['POWR']:
                 t = int((sample[0] - start_ts) / 60)
                 j = np.where(self.time_index == t)[0][0]
                 
-                data[i][j]= sample[1]
-        self.data[date] = data
+                power_data[i][j]= sample[1]
+        self.power_data[date] = power_data
 
     def device_data(self, date, device_id):
         date_key = date.strftime('%Y-%m-%d')
-        if self.data.get(date_key, None) is None:
+        if self.power_data.get(date_key, None) is None:
             self.fetch_day(date)
         if device_id not in self.device_index:
             return None
         i = self.device_index.index(device_id)
-        return self.time_axis(date), self.data[date_key][i]
+        return self.time_axis(date), self.power_data[date_key][i]
     
     def system_data(self, date, time_slice=False):
         date_key = date.strftime('%Y-%m-%d')
-        if self.data.get(date_key, None) is None:
+        if self.power_data.get(date_key, None) is None:
             self.fetch_day(date)
         if time_slice:
-            return np.transpose(self.data[date_key])[self.time_index_at(date)]
+            return np.transpose(self.power_data[date_key])[self.time_index_at(date)]
         else:
-            return self.time_axis(date), self.data[date_key]
+            return self.time_axis(date), self.power_data[date_key]
     
     def system_totals_data(self, date):
         date_key = date.strftime('%Y-%m-%d')
-        if self.data.get(date_key, None) is None:
+        if self.power_data.get(date_key, None) is None:
             self.fetch_day(date)
-        return self.time_axis(date), sum(self.data[date_key],0)
+        return self.time_axis(date), sum(self.power_data[date_key],0)
     
     def time_index_at(self, time):
         ds = datetime.datetime(time.year,time.month,time.day)
