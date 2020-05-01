@@ -26,6 +26,7 @@ print(f'peak system power output for today: {max(powers)} W')
 
 print(f'recent inverter level power')
 recent_time = datetime.now()-timedelta(minutes=30)
+
 time, powers = eclient.array_power(recent_time)
 print(f'time: {time}')
 print(f'total: {sum(powers)}')

@@ -126,13 +126,13 @@ class Client():
         
         # data -> { '<dev_id>': { 'POWR' [<time>, <power>, <max_pwr>] }, ... }
         self.device_index = list(raw_data.keys())
-        data = _zeros(len(self.minute_axis), len(self.device_index))
-
+        data = []
         for i, p_id in enumerate(raw_data.keys()):
-            for sample in raw_data[p_id]['POWR']:
-                t = int((sample[0] - start_ts) / 60)
-                j = self.minute_axis.index(t)
-                data[i][j]= sample[1]
+            panel_data = [0]*len(self.minute_axis)
+            for sample in raw_data[p_id]['POWR']:    
+                j = int((sample[0] - start_ts) / (self.time_step*60))
+                panel_data[j]= sample[1]
+            data.append(panel_data)
         self.data[date] = data
 
     def device_data(self, date, device_id):
@@ -174,7 +174,7 @@ class Client():
 # NOTE: basic list handling, allows us to swap in numpy later
 def _transpose(l):
     tl = list(zip(*l))
-    return [list(tt) for tt in tl ]
+    return tl #[list(tt) for tt in tl ]
 
 def _zeros(a,b):
     return [[0]*a]*b
