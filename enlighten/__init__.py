@@ -1,5 +1,5 @@
-import numpy as np
-import datetime
+from datetime import datetime
+from datetime import timedelta
 import requests
 import re
 import os
@@ -19,7 +19,8 @@ class Client():
         self.persist_config = kwargs.get('persist_config', False)
         self.config_file = kwargs.get('config_file', 'enphase_config.p')
         # API data comes in 5 minute intervals, x-axis in int minutes
-        self.time_index = np.arange(0, 24*60, 5)
+        self.time_step = 5
+        self.minute_axis = _range(0, 24*60, 5)
         if not self.load_session():
             return
         if not self.load_config():
@@ -109,9 +110,8 @@ class Client():
         return True
 
     def time_axis(self, start):
-        mins = self.time_index
-        return np.array(
-            [ start + datetime.timedelta(minutes=int(m)) for m in mins ]) 
+        mins = self.minute_axis
+        return [ start + timedelta(minutes=int(m)) for m in mins ]
 
     def fetch_day(self, date):
         date_str = date.strftime('%Y-%m-%d')
@@ -133,9 +133,11 @@ class Client():
     def process_day(self, raw_data):
         raw_data.pop('haiku')
         date = raw_data.pop('date')
-        start_ts = datetime.datetime.strptime(date, '%Y-%m-%d').timestamp()
+        start_ts = datetime.strptime(date, '%Y-%m-%d').timestamp()
+        
         # data -> { '<dev_id>': { 'POWR' [<time>, <power>, <max_pwr>] }, ... }
         self.device_index = list(raw_data.keys())
+<<<<<<< HEAD
         self.raw_data[date] = raw_data
         power_data = np.zeros((len(self.device_index), len(self.time_index)))
         for i, p_id in enumerate(raw_data.keys()):
@@ -154,9 +156,30 @@ class Client():
             return None
         i = self.device_index.index(device_id)
         return self.time_axis(date), self.power_data[date_key][i]
-    
-    def system_data(self, date, time_slice=False):
+=======
+        data = []
+        for i, p_id in enumerate(raw_data.keys()):
+            panel_data = [0]*len(self.minute_axis)
+            for sample in raw_data[p_id]['POWR']:    
+                j = int((sample[0] - start_ts) / (self.time_step*60))
+                panel_data[j]= sample[1]
+            data.append(panel_data)
+        self.data[date] = data
+
+    def device_data(self, date, device_id):
         date_key = date.strftime('%Y-%m-%d')
+        ds = datetime(date.year,date.month,date.day)
+        if self.data.get(date_key, None) is None:
+            self.fetch_day(ds)
+        if device_id not in self.device_index:
+            return None
+        i = self.device_index.index(device_id)
+        return self.time_axis(ds), self.data[date_key][i]
+>>>>>>> 7c4995275cda4a625ef709568c20492db62a2d84
+    
+    def system_data(self, date, transpose=False):
+        date_key = date.strftime('%Y-%m-%d')
+<<<<<<< HEAD
         if self.power_data.get(date_key, None) is None:
             self.fetch_day(date)
         if time_slice:
@@ -164,12 +187,43 @@ class Client():
         else:
             return self.time_axis(date), self.power_data[date_key]
     
+=======
+        ds = datetime(date.year,date.month,date.day)
+        if self.data.get(date_key, None) is None:
+            self.fetch_day(ds)
+        if transpose:
+            return self.time_axis(ds), _transpose(self.data[date_key])
+        else:
+            return self.time_axis(ds), self.data[date_key]
+
+    def array_power(self, time):
+        times, powers = self.system_data(time, transpose=True)
+        time_id = self.time_index(time)
+        return times[time_id], powers[time_id]
+
+>>>>>>> 7c4995275cda4a625ef709568c20492db62a2d84
     def system_totals_data(self, date):
         date_key = date.strftime('%Y-%m-%d')
         if self.power_data.get(date_key, None) is None:
             self.fetch_day(date)
+<<<<<<< HEAD
         return self.time_axis(date), sum(self.power_data[date_key],0)
+=======
+        return self.time_axis(date), [sum(d) for d in self.data[date_key]]
+>>>>>>> 7c4995275cda4a625ef709568c20492db62a2d84
     
-    def time_index_at(self, time):
-        ds = datetime.datetime(time.year,time.month,time.day)
-        return round((time-ds).total_seconds() / 600)
+    def time_index(self, time):
+        ds = datetime(time.year,time.month,time.day)
+        return round((time-ds).total_seconds() / (self.time_step*60))
+
+
+# NOTE: basic list handling, allows us to swap in numpy later
+def _transpose(l):
+    tl = list(zip(*l))
+    return tl #[list(tt) for tt in tl ]
+
+def _zeros(a,b):
+    return [[0]*a]*b
+
+def _range(a,e,s):
+    return range(a,e,s)

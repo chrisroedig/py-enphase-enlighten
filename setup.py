@@ -4,8 +4,13 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
+<<<<<<< HEAD
     name="enlighten-croedig", # Replace with your own username
     version="0.1.0",
+=======
+    name="py-enphase-enlighten-croedig", # Replace with your own username
+    version="0.0.3",
+>>>>>>> 7c4995275cda4a625ef709568c20492db62a2d84
     author="Christoph A. Roedig",
     author_email="chris@roedig.us",
     description="Simple API client to easily extract data from Enphase Enlighten",
