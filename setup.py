@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="enlighten-croedig", # Replace with your own username
-    version="0.0.1",
+    version="0.1.0",
     author="Christoph A. Roedig",
     author_email="chris@roedig.us",
     description="Simple API client to easily extract data from Enphase Enlighten",
