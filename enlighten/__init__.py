@@ -146,12 +146,12 @@ class Client():
                 j = int((sample[0] - start_ts) / (self.time_step*60))
                 panel_data[j]= sample[1]
             data.append(panel_data)
-        self.data[date] = data
+        self.power_data[date] = data
 
     def device_data(self, date, device_id):
         date_key = date.strftime('%Y-%m-%d')
         ds = datetime(date.year,date.month,date.day)
-        if self.data.get(date_key, None) is None:
+        if self.power_data.get(date_key, None) is None:
             self.fetch_day(ds)
         if device_id not in self.device_index:
             return None
@@ -161,12 +161,12 @@ class Client():
     def system_data(self, date, transpose=False):
         date_key = date.strftime('%Y-%m-%d')
         ds = datetime(date.year,date.month,date.day)
-        if self.data.get(date_key, None) is None:
+        if self.power_data.get(date_key, None) is None:
             self.fetch_day(ds)
         if transpose:
-            return self.time_axis(ds), _transpose(self.data[date_key])
+            return self.time_axis(ds), _transpose(self.power_data[date_key])
         else:
-            return self.time_axis(ds), self.data[date_key]
+            return self.time_axis(ds), self.power_data[date_key]
 
     def array_power(self, time):
         times, powers = self.system_data(time, transpose=True)
@@ -177,7 +177,7 @@ class Client():
         date_key = date.strftime('%Y-%m-%d')
         if self.power_data.get(date_key, None) is None:
             self.fetch_day(date)
-        return self.time_axis(date), [sum(d) for d in self.data[date_key]]
+        return self.time_axis(date), [sum(d) for d in self.power_data[date_key]]
     
     def time_index(self, time):
         ds = datetime(time.year,time.month,time.day)
