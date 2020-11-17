@@ -18,8 +18,8 @@ class Client():
         self.cookie_file = kwargs.get('session_file','enphase_cookie.p')
         self.persist_config = kwargs.get('persist_config', False)
         self.config_file = kwargs.get('config_file', 'enphase_config.p')
-        # ephase retains data in 20 minute intervals, x-axis in int minutes
-        self.time_step = 20
+        # ephase retains data in 15 minute intervals, x-axis in int minutes
+        self.time_step = 15
         self.minute_axis = _range(0, 24*60, self.time_step)
         if not self.load_session():
             return
