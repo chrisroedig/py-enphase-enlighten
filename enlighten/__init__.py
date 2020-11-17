@@ -18,9 +18,9 @@ class Client():
         self.cookie_file = kwargs.get('session_file','enphase_cookie.p')
         self.persist_config = kwargs.get('persist_config', False)
         self.config_file = kwargs.get('config_file', 'enphase_config.p')
-        # API data comes in 5 minute intervals, x-axis in int minutes
-        self.time_step = 5
-        self.minute_axis = _range(0, 24*60, 5)
+        # ephase retains data in 20 minute intervals, x-axis in int minutes
+        self.time_step = 20
+        self.minute_axis = _range(0, 24*60, self.time_step)
         if not self.load_session():
             return
         if not self.load_config():
