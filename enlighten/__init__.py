@@ -113,12 +113,15 @@ class Client():
         mins = self.minute_axis
         return [ start + timedelta(minutes=int(m)) for m in mins ]
 
-    def fetch_day(self, date):
+    def get_day(self, date):
         date_str = date.strftime('%Y-%m-%d')
         path = f'/systems/{self.system_id}/inverter_data_x/time_series.json'
         params = {'date': date_str}
-        resp = requests.get(self.URL + path, params=params, cookies=self.cookies)
-        return self.process_day(resp.json())
+        return requests.get(self.URL + path, params=params, cookies=self.cookies).json()
+
+    def fetch_day(self, date):
+        date_key = date.strftime('%Y-%m-%d')
+        self.power_data[date_key] = self.process_day(self.get_day(date))
 
     def inverter_details(self, date):
         # { "date": "...", "ch_id": ..., 
@@ -146,7 +149,7 @@ class Client():
                 j = int((sample[0] - start_ts) / (self.time_step*60))
                 panel_data[j]= sample[1]
             data.append(panel_data)
-        self.power_data[date] = data
+        return data
 
     def device_data(self, date, device_id):
         date_key = date.strftime('%Y-%m-%d')
