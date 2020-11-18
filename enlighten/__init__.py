@@ -16,13 +16,18 @@ class Client():
         self.cookies = None
         self.power_data = {}
         self.raw_data = {}
-        self.utc_offset = utc_offset
+        
         self.persist_session = persist_session
         self.cookie_file = session_file
         self.persist_config = persist_config
         self.config_file = config_file
+        
+        # NOTE: our time axis should start at local solar midnight
+        # and have units of minutes past UTC midnight
+        self.utc_offset = utc_offset
         self.time_step = time_step
         self.minute_axis = _range(-utc_offset*60, (24-utc_offset)*60, time_step)
+        
         if not self.load_session():
             return
         if not self.load_config():
@@ -140,7 +145,10 @@ class Client():
     def process_day(self, raw_data):
         raw_data.pop('haiku')
         date = raw_data.pop('date')
-        start_ts = datetime.strptime(date, '%Y-%m-%d').timestamp()
+        start_ts = (
+            datetime.strptime(date, '%Y-%m-%d')+
+            timedelta(minutes=self.minute_axis[0])
+            ).timestamp()
         
         # data -> { '<dev_id>': { 'POWR' [<time>, <power>, <max_pwr>] }, ... }
         self.device_index = list(raw_data.keys())
