@@ -8,19 +8,21 @@ import pickle
 class Client():
     URL = 'https://enlighten.enphaseenergy.com'
 
-    def __init__(self, **kwargs):
+    def __init__(self, utc_offset=-5, time_step=15,
+            persist_session=False, session_file='enphase_cookie.p', 
+            persist_config=False, config_file='enphase_config.p'):
         self.system_id = None
         self.csrf_token = ''
         self.cookies = None
         self.power_data = {}
         self.raw_data = {}
-        self.persist_session = kwargs.get('persist_session', False)
-        self.cookie_file = kwargs.get('session_file','enphase_cookie.p')
-        self.persist_config = kwargs.get('persist_config', False)
-        self.config_file = kwargs.get('config_file', 'enphase_config.p')
-        # ephase retains data in 15 minute intervals, x-axis in int minutes
-        self.time_step = 15
-        self.minute_axis = _range(0, 24*60, self.time_step)
+        self.utc_offset = utc_offset
+        self.persist_session = persist_session
+        self.cookie_file = session_file
+        self.persist_config = persist_config
+        self.config_file = config_file
+        self.time_step = time_step
+        self.minute_axis = _range(-utc_offset*60, (24-utc_offset)*60, time_step)
         if not self.load_session():
             return
         if not self.load_config():
